@@ -1,0 +1,32 @@
+[package]
+name = "torri_bench"
+version = "0.1.0"
+cairo-version = "2.2.0"
+
+# See more keys and their definitions at https://docs.swmansion.com/scarb/docs/reference/manifest.html
+
+[scripts]
+create_account = "starkli account fetch 0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f8160973 --rpc http://localhost:5050 --output ./katana_account.json"
+emit = "starkli invoke 0x3c5d7df9426ea9ffbff76d9fbf29e5301a41da85522fec55763b2486a79e99b emit_events 50 --account ./katana_account.json --private-key 0x1800000000300000180000000000030000000000003006001800006600 --rpc http://localhost:5050 --watch"
+emit_enum = "starkli invoke 0x3c5d7df9426ea9ffbff76d9fbf29e5301a41da85522fec55763b2486a79e99b emit_events_with_enum 50 --account ./katana_account.json --private-key 0x1800000000300000180000000000030000000000003006001800006600 --rpc http://localhost:5050 --watch"
+torii = "torii --world 0x77c55125294c8f071d4d2af67ebb4d970d98457e6010ae6464c2c95bddaec36"
+
+[cairo]
+sierra-replace-ids = true
+
+[dependencies]
+dojo = {git = "https://github.com/dojoengine/dojo.git"}
+
+[[target.dojo]]
+build-external-contracts = []
+
+[tool.dojo]
+initializer_class_hash = "0xbeef"
+
+[tool.dojo.env]
+rpc_url = "http://localhost:5050/"
+
+# Default account for katana with seed = 0
+account_address = "0x517ececd29116499f4a1b64b094da79ba08dfd54a3edaa316134c41f8160973"
+private_key = "0x1800000000300000180000000000030000000000003006001800006600"
+# world_address = "0x77c55125294c8f071d4d2af67ebb4d970d98457e6010ae6464c2c95bddaec36"
