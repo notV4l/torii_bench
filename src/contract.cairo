@@ -1,6 +1,12 @@
 use starknet::ContractAddress;
 use dojo::world::{IWorldDispatcher, IWorldDispatcherTrait};
 
+#[derive(Model, Copy, Drop, Serde)]
+struct Store {
+    #[key]
+    id: felt252,
+    value: felt252,
+}
 
 #[derive(Model, Copy, Drop, Serde)]
 struct Log {
@@ -31,25 +37,22 @@ struct LogWithEnum {
 trait IContract<TContractState> {
     fn emit_events(self: @TContractState, count: u32);
     fn emit_events_with_enum(self: @TContractState, count: u32);
+
+    fn add(self: @TContractState, value: felt252);
+    fn del(self: @TContractState, id: felt252);
+    fn read(self: @TContractState, id: felt252) -> felt252;
+
+    fn malicious_store_set_record(self: @TContractState);
+    fn malicious_metadata_updated(self: @TContractState);
+    fn malicious_model_registered(self: @TContractState);
 }
 
-#[starknet::contract]
+#[dojo::contract]
 mod contract {
     use starknet::ContractAddress;
     use starknet::get_caller_address;
 
-    use super::{IWorldDispatcher, IWorldDispatcherTrait};
-    use super::{IContract,Log,LogWithEnum, TestEnum};
-
-    #[storage]
-    struct Storage {
-        world_dispatcher: ContractAddress,
-    }
-
-    #[constructor]
-    fn constructor(ref self: ContractState, world: ContractAddress,) {
-        self.world_dispatcher.write(world);
-    }
+    use super::{IContract,Store, Log,LogWithEnum, TestEnum};
 
     #[event]
     #[derive(Drop, starknet::Event)]
@@ -66,8 +69,10 @@ mod contract {
 
     #[external(v0)]
     impl ContractImpl of IContract<ContractState> {
+
+
         fn emit_events(self: @ContractState, count: u32) {
-            let world = IWorldDispatcher { contract_address: self.world_dispatcher.read() };
+            let world = self.world_dispatcher.read();
 
             let mut i = 0;
             loop {
@@ -87,7 +92,7 @@ mod contract {
         }
 
         fn emit_events_with_enum(self: @ContractState, count: u32) {
-            let world = IWorldDispatcher { contract_address: self.world_dispatcher.read() };
+            let world = self.world_dispatcher.read();
 
             let mut i = 0;
             loop {
@@ -110,6 +115,51 @@ mod contract {
                 i += 1;
             };
         }
+
+        fn add(self: @ContractState, value: felt252) {
+            let world = self.world_dispatcher.read();
+            let s = Store {
+                id: world.uuid().into(),
+                value
+            };
+            set!(world,(s));
+        }
+
+        fn del(self: @ContractState, id: felt252){
+            let world = self.world_dispatcher.read();
+            world.delete_entity('Store', array![id].span());
+        }
+
+       
+        fn read(self: @ContractState, id: felt252) -> felt252{
+            let world = self.world_dispatcher.read();
+            let s = get!(world,(id), (Store));
+            s.value
+        }
+
+
+        fn malicious_store_set_record(self: @ContractState){
+            let world = self.world_dispatcher.read();
+            let mut keys = array![selector!("StoreSetRecord")];
+            let mut values =  array![];
+            world.emit(keys, values.span());
+        }
+        
+        fn malicious_metadata_updated(self: @ContractState){
+            let world = self.world_dispatcher.read();
+            let mut keys = array![selector!("MetadataUpdate")];
+            let mut values =  array![];
+            world.emit(keys, values.span());
+        }
+
+        fn malicious_model_registered(self: @ContractState){
+            let world = self.world_dispatcher.read();
+            let mut keys = array![selector!("ModelRegistered")];
+            let mut values =  array![];
+            world.emit(keys, values.span());
+        }
+
+
     }
 }
 
